@@ -1,125 +1,112 @@
-# HCL (Huffman Compression Library)
+# Huffman Compression
+A minimal huffman compression program using C++ language.
 
-> HCL a custom C++ library that allows file compression using Huffman Compression algorithm.
+## Theory
+Huffman compression is based on huffman coding technique. The huffman coding creates an optimal binary tree that is constructed based on frequency of an item/character in a file.
 
-## Table of Contents
 
-- [Features](#Features)
-- [Benchmarks](#Benchmarks)
-- [Usage](#Usage)
-  - [Try Online](#Try-Online)
-  - [Try Locally](#Try-Locally)
-- [Methods](#Methods)
-  - [compressFile](#compressFile)
-  - [decompressFile](#decompressFile)
-  - [benchmark](#benchmark)
-- [Performance Comparison](#Performance-Comparison)
-  - [Conclusion](#Conclusion)
-- [Examples](#Examples)
-- [Run tests](#Run-tests)
-
-## Features
-
-- Fast and efficient
-- Supports all kinds of files (images, pdf, video, text, etc)
-- High level abstraction methods to be used
-- No need of understanding how compression algorithm works
-- Light weight library
-- Compression ratio of upto 50%
-
-## Benchmarks
-
-Below is the output for `huffmantool.benchmark()` method
-![output.png](output.png)
-
-## Usage
-
-There are 2 ways to try the HCL library
-
-### 1. Try Online
-
-Try the HCL library online on my custom repl. [![](https://img.shields.io/badge/Try%20Online-repl.it-blue)](https://repl.it/@bhumijgupta/huffman-demo)
-
-### 2. Try Locally
-
-1.  Clone this repo to your project folder  
-    `git clone https://github.com/bhumijgupta/huffman-compression-library.git hcl`
-
-2.  Import Huffman tool header and create new `huffmantool` object
-
-```C++
-// Filename main.cpp
-#include "hcl/huffmantool.h"
-
-int main(){
-    huffmantool ht;
-    .
-    .
-    .
-}
+Let's take an example of a file or string containing data like "AAABBCAAADDFFAAAADCCCDAADDDAAACGAAACACA"
 ```
-
-3.  Compile and run file
-
-```bash
-g++ main.cpp && ./a.out
+character     frequency
+    A             20
+    B              2
+    C              7
+    D              7
+    F              2
+    G              1
 ```
-
-## Methods
-
-### compressFile
-
-```C++
-compressFile(string sourceFile, string compressedFile = "") : string
-```
-
-Returns the destination of compressed file.  
-If the `sourceFile` provided is invalid or cannot be opened, it returns an empty string.
-
-If no `compressedFile` is provided, `compressedFile` is present at the same dir as `sourcefile` with prefix `compressed_`
-
-### decompressFile
-
-```C++
-decompressFile(string compressedFile, string retrievedFile = "") : string
-```
-
-Returns the destination of decompressed file.  
-If the `compressedFile` provided is invalid or cannot be opened, it reurns an empty string.
-
-If no `retrievedFile` is provided, `retrievedFile` is present at the same dir as `compressedFile` with prefix `decompressed_` and removed `compressed_` prefix (if present)
-
-### benchmark
-
-```C++
-benchmark(string sourcefile) : void
-```
-
-This method performs compression and decompression on the sourcefile provided and prints the following stats to the stdout.
+The above following data will generate a binary tree starting from the characters having the lowest frequency, and construct till we use all the characters as follows:
 
 ```
---------------------------------------------------------------------------------
-                              B E N C H M A R K
---------------------------------------------------------------------------------
+Pass 1:
+(A, 20) (C, 7) (D, 7) (B, 2) (F, 2) (G, 1)                      (A, 20) (C, 7) (D, 7) (**, 3)  (B, 2)   
+                                                   =>                                  /   \
+                                                                                      /     \
+                                                                                   (F, 2) (G, 1)
 
-Filetype                      Filename                      Filesize in bytes
+Pass 2:
+(A, 20) (C, 7) (D, 7) (**, 3)  (B, 2)                           (A, 20) (C, 7) (D, 7) (**, 5)
+                       /   \                                                           /   \
+                      /     \                                                         /     \
+                   (F, 2) (G, 1)                   =>                              (**, 3) (B, 2)
+                                                                                    /   \
+                                                                                   /     \
+                                                                                (F, 2) (G, 1)
 
-Original
-Compressed
-Decompressed
+Pass 3:
+(A, 20) (C, 7) (D, 7) (**, 5)                                    (A, 20) (C, 7) (**, 12)
+                       /   \                                                     /   \
+                      /     \                                                   /     \
+                   (**, 3) (B, 2)                  =>                        (D, 7) (**, 5)
+                    /   \                                                            /   \
+                   /     \                                                          /     \
+                 (F, 2) (G, 1)                                                   (**, 3) (B, 2)
+                                                                                  /   \
+                                                                                 /     \
+                                                                              (F, 2) (G, 1)
+                                                                              
+Pass 4:
+(A, 20) (**, 12) (C, 7)                                           (A, 20) (**, 19)
+          /   \                                                             /   \
+         /     \                                                           /     \
+      (D, 7) (**, 5)                                                   (**, 12) (C, 7)
+              /   \                                                      /   \
+             /     \                               =>                   /     \
+          (**, 3) (B, 2)                                            (D, 7) (**, 5)
+           /   \                                                            /   \
+          /     \                                                          /     \
+       (F, 2) (G, 1)                                                    (**, 3) (B, 2)
+                                                                         /   \
+                                                                        /     \
+                                                                     (F, 2) (G, 1)
+                                                                     
+Pass 5 (Final), with huffman code:
 
---------------------------------------------------------------------------------
-Time taken to compress file: XYZ microseconds
-Time taken to decompress file: XYZ microseconds
-Compression: XY.Z%
+Left Branch denoting 0 and right 1
+
+(A, 20) (**, 19)                                                         (**, 39)
+          /   \                                                           /   \
+         /     \                                                      (0)/     \(1)
+     (**, 12) (C, 7)                                          [0] <= (A, 20) (**, 19)
+       /   \                                                                 /   \
+      /     \                                                            (0)/     \(1)
+  (D, 7) (**, 5)                                    =>                  (**, 12) (C, 7) => [11]
+          /   \                                                          /   \
+         /     \                                                     (0)/     \(1)
+     (**, 3) (B, 2)                                        [100] <= (D, 7) (**, 5)
+      /   \                                                                 /   \
+     /     \                                                               /     \(1)
+  (F, 2) (G, 1)                                                        (**, 3) (B, 2) => [1011]
+                                                                        /   \
+                                                                    (0)/     \(1)
+                                                         [10100] <= (F, 2) (G, 1) => [10101]
+                                                         
+Final Huffman Codes:
+character     frequency       Huffman Codes       Actual Binary
+    A             20                  0             01000001
+    B              2               1011             01000010
+    C              7                 11             01000011
+    D              7                100             01000100
+    F              2              10100             01000110
+    G              1              10101             01000111
+__________________________________________________________________
+                  39                 75                  312
+```
+Hence the resultant data is stored as binary written as '0001011101100010010010100101000000100111111100001001001000001110101000110110*00000*', which has 75 bits
+plus 5 digits appended to round off the remaining bits while storing in the file.
+
+
+## Executing program
 
 ```
+g++ huffman-compression.cpp
+[a.exe | ./a.out] -c|-dc [filename_to_be_compressed] 
+(The order must be same: first: option to compress/decompress and then second: filename)
+```
+The file to be compressed will generate a file with extension '.abiz', which is the compressed version of the original one.
 
-<b>Note</b>: For detailed understanding of code refer to [Wiki](https://github.com/bhumijgupta/huffman-compression-library/wiki).
-
-## Performance Comparison
-
-The `newfile.txt` is populated using lorem ipsum data from [lipsum.com](https://www.lipsum.com/) and the following data is noticed after executing `main.cpp`.
+> **Note**: 
+> - Compressing files other than ASCII based text files (e.g., audio (.mp3), video (.mp4), pdfs, document (.doc/.docx), etc.) can have little or no effect on the resulting size.
 
 | Number of characters | Original file size (in bytes) | Compressed file size (in bytes) |
 | :------------------: | :---------------------------: | :-----------------------------: |
@@ -132,25 +119,3 @@ The `newfile.txt` is populated using lorem ipsum data from [lipsum.com](https://
 ### Conclusion
 
 The compression ratio and performance of the Huffman coding depends on the size of input text and the frequency of distinct characters in the file. From the above comparison we can see that the current implementation of huffman coding does not produce positive compression ratio for small files due to the overhead of storing `Huffman Tree` in the compressed file, which is useful at the time of decompression.
-
-But we notice, as the size of file increases (>=1000 bytes), the compression ratio stays at almost 50%.
-
-## Examples
-
-Following are the list of examples
-
-- [CLI tool for file compression](examples/cli_compression.cpp)
-- [Benchmarking tool](examples/benchmark.cpp)
-
-## Run tests
-
-![](https://github.com/bhumijgupta/huffman-compression-library/workflows/Unit%20Test/badge.svg)
-
-The tests are stored in `tests/` directory. You need to install [googletest](https://www.eriksmistad.no/getting-started-with-google-test-on-ubuntu/) framework to run test.
-
-```bash
-cd tests/
-cmake CMakeLists.txt
-make
-./runTests
-```
