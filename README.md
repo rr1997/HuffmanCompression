@@ -154,11 +154,3 @@ cmake CMakeLists.txt
 make
 ./runTests
 ```
-
----
-
-```C++
-if(repo.isAwesome || repo.isHelpful){
-    StarRepo();
-}
-```
